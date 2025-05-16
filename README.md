@@ -4,11 +4,11 @@ HealthSense AI is a Flask-based web application designed to predict potential di
 
 ## Screenshot of HealthSense AI
 
-![Manual_Symptom_Selection](images/Screenshot 2025-05-17 013704.png)
+![Manual_Symptom_Selection](images/Manual_symptom_selection_interface.png)
 
 ## Chatbot Interface
 
-![Chatbot](images/Screenshot 2025-05-17 013810.png)
+![Chatbot](images/Chatbot_interface.png)
 
 ## Technologies Used
 
