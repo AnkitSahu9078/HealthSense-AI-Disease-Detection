@@ -1,0 +1,664 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>HealthSense AI - Disease Detection System</title>
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css"
+    />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.0/jquery.min.js"></script>
+    <style>
+      .symptom-checkbox {
+        margin-right: 10px;
+        margin-bottom: 10px;
+      }
+      .symptom-label {
+        display: inline-block;
+        margin-right: 20px;
+        margin-bottom: 10px;
+        width: 220px;
+      }
+      .result-box {
+        margin-top: 30px;
+        padding: 20px;
+        border-radius: 5px;
+        display: none;
+      }
+      .loading {
+        display: none;
+        text-align: center;
+        margin-top: 20px;
+      }
+      #search-box {
+        margin-bottom: 20px;
+      }
+      .selected-symptoms {
+        margin-top: 20px;
+        padding: 10px;
+        background-color: #f8f9fa;
+        border-radius: 5px;
+        min-height: 50px;
+      }
+      .symptom-badge {
+        display: inline-block;
+        margin: 5px;
+        padding: 5px 10px;
+        background-color: #e9ecef;
+        border-radius: 15px;
+      }
+      .symptom-category {
+        margin-bottom: 15px;
+        padding: 15px;
+        background-color: #f8f9fa;
+        border-radius: 5px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+      }
+      .symptom-category h6 {
+        margin-bottom: 10px;
+        color: #0d6efd;
+        font-weight: 600;
+        border-bottom: 1px solid #dee2e6;
+        padding-bottom: 8px;
+      }
+      /* Chat interface styles */
+      .chat-container {
+        height: 400px;
+        overflow-y: auto;
+        border: 1px solid #dee2e6;
+        border-radius: 5px;
+        padding: 15px;
+        margin-bottom: 15px;
+        background-color: #f8f9fa;
+      }
+      .chat-message {
+        margin-bottom: 15px;
+        padding: 10px 15px;
+        border-radius: 15px;
+        max-width: 80%;
+        word-wrap: break-word;
+      }
+      .user-message {
+        background-color: #007bff;
+        color: white;
+        margin-left: auto;
+        border-bottom-right-radius: 5px;
+      }
+      .bot-message {
+        background-color: #e9ecef;
+        color: #212529;
+        margin-right: auto;
+        border-bottom-left-radius: 5px;
+      }
+      .chat-input-container {
+        display: flex;
+      }
+      .chat-input {
+        flex-grow: 1;
+        border-radius: 20px;
+        padding: 10px 15px;
+      }
+      .send-button {
+        margin-left: 10px;
+        border-radius: 50%;
+        width: 40px;
+        height: 40px;
+        padding: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      .chat-result {
+        margin-top: 20px;
+        padding: 15px;
+        background-color: #f0f8ff;
+        border-radius: 5px;
+        border-left: 4px solid #007bff;
+      }
+      .nav-tabs .nav-link {
+        font-weight: 500;
+      }
+      .tab-content {
+        padding: 20px 0;
+      }
+      /* New styles for better UX */
+      .category-header {
+        cursor: pointer;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+      .category-header i {
+        transition: transform 0.3s ease;
+      }
+      .category-header.collapsed i {
+        transform: rotate(-90deg);
+      }
+      .category-content {
+        padding-top: 10px;
+      }
+      .category-badge {
+        background-color: #e7f1ff;
+        color: #0d6efd;
+        font-size: 0.8rem;
+        padding: 0.25rem 0.5rem;
+        border-radius: 10px;
+      }
+      .symptom-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+        gap: 10px;
+      }
+      .top-diseases-card {
+        border-left: 4px solid #0d6efd;
+      }
+      .prediction-highlight {
+        background-color: rgba(13, 110, 253, 0.1);
+        padding: 10px;
+        border-radius: 5px;
+        font-weight: 500;
+      }
+      .disclaimer {
+        font-size: 0.85rem;
+        font-style: italic;
+        color: #dc3545;
+      }
+      .quick-select {
+        margin-bottom: 20px;
+      }
+      .quick-select button {
+        margin-right: 5px;
+        margin-bottom: 5px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container mt-5 mb-5">
+      <div class="row justify-content-center">
+        <div class="col-md-10">
+          <div class="card shadow">
+            <div class="card-header bg-primary text-white">
+              <h3 class="card-title mb-0"><i class="fas fa-heartbeat me-2"></i>HealthSense AI</h3>
+            </div>
+            <div class="card-body">
+              <!-- Tab navigation -->
+              <ul class="nav nav-tabs" id="myTab" role="tablist">
+                <li class="nav-item" role="presentation">
+                  <button class="nav-link active" id="manual-tab" data-bs-toggle="tab" data-bs-target="#manual" type="button" role="tab" aria-controls="manual" aria-selected="true">
+                    <i class="fas fa-list-check me-2"></i>Manual Symptom Selection
+                  </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                  <button class="nav-link" id="chatbot-tab" data-bs-toggle="tab" data-bs-target="#chatbot" type="button" role="tab" aria-controls="chatbot" aria-selected="false">
+                    <i class="fas fa-comments me-2"></i>Chatbot Assistant
+                  </button>
+                </li>
+              </ul>
+              
+              <!-- Tab content -->
+              <div class="tab-content" id="myTabContent">
+                <!-- Manual Symptom Selection Tab -->
+                <div class="tab-pane fade show active" id="manual" role="tabpanel" aria-labelledby="manual-tab">
+                  <form id="prediction-form">
+                    <div class="mb-3">
+                      <h5 class="mt-3 mb-3">Select your symptoms:</h5>
+                      
+                      <!-- Search box with icon -->
+                      <div class="input-group mb-3">
+                        <span class="input-group-text"><i class="fas fa-search"></i></span>
+                        <input
+                          type="text"
+                          id="search-box"
+                          class="form-control"
+                          placeholder="Search symptoms..."
+                        />
+                      </div>
+                      
+                      <!-- Quick select common symptoms -->
+                      <div class="quick-select">
+                        <h6><i class="fas fa-bolt me-2"></i>Quick Select Common Symptoms:</h6>
+                        <button type="button" class="btn btn-sm btn-outline-primary quick-symptom" data-symptom="fever">Fever</button>
+                        <button type="button" class="btn btn-sm btn-outline-primary quick-symptom" data-symptom="headache">Headache</button>
+                        <button type="button" class="btn btn-sm btn-outline-primary quick-symptom" data-symptom="cough">Cough</button>
+                        <button type="button" class="btn btn-sm btn-outline-primary quick-symptom" data-symptom="fatigue">Fatigue</button>
+                        <button type="button" class="btn btn-sm btn-outline-primary quick-symptom" data-symptom="sore_throat">Sore Throat</button>
+                        <button type="button" class="btn btn-sm btn-outline-primary quick-symptom" data-symptom="nausea">Nausea</button>
+                        <button type="button" class="btn btn-sm btn-outline-primary quick-symptom" data-symptom="diarrhea">Diarrhea</button>
+                        <button type="button" class="btn btn-sm btn-outline-primary quick-symptom" data-symptom="shortness_of_breath">Shortness of Breath</button>
+                      </div>
+
+                      <!-- Selected symptoms display -->
+                      <div class="selected-symptoms">
+                        <h6>
+                          <i class="fas fa-check-circle me-2"></i>Selected Symptoms: <span id="symptom-count" class="badge bg-primary">0</span>
+                        </h6>
+                        <div id="selected-symptoms-list"></div>
+                      </div>
+
+                      <!-- Categorized symptoms -->
+                      <div id="symptoms-container" class="mt-4 accordion">
+                        {% for category, category_symptoms in categorized_symptoms.items() %}
+                        <div class="symptom-category mb-3">
+                          <div class="category-header" data-bs-toggle="collapse" data-bs-target="#category-{{ category|replace(' & ', '-')|replace(' ', '-')|lower }}">
+                            <h6 class="mb-0">
+                              <i class="fas fa-angle-down me-2"></i>{{ category }} 
+                              <span class="category-badge ms-2">{{ category_symptoms|length }}</span>
+                            </h6>
+                          </div>
+                          <div id="category-{{ category|replace(' & ', '-')|replace(' ', '-')|lower }}" class="category-content collapse show">
+                            <div class="symptom-grid">
+                              {% for symptom in category_symptoms %}
+                              <div class="symptom-item">
+                                <label class="symptom-label">
+                                  <input
+                                    type="checkbox"
+                                    name="symptoms"
+                                    value="{{ symptom }}"
+                                    class="symptom-checkbox"
+                                  />
+                                  {{ symptom.replace('_', ' ').title() }}
+                                </label>
+                              </div>
+                              {% endfor %}
+                            </div>
+                          </div>
+                        </div>
+                        {% endfor %}
+                      </div>
+                    </div>
+                    <button type="submit" class="btn btn-primary">
+                      <i class="fas fa-stethoscope me-2"></i>Predict Disease
+                    </button>
+                  </form>
+
+                  <div class="loading">
+                    <div class="spinner-border text-primary" role="status">
+                      <span class="visually-hidden">Loading...</span>
+                    </div>
+                    <p>Analyzing symptoms...</p>
+                  </div>
+
+                  <div id="result" class="result-box bg-light">
+                    <h4><i class="fas fa-clipboard-check me-2"></i>Diagnosis Results:</h4>
+                    <div class="alert alert-info">
+                      <p>
+                        <strong>Primary prediction:</strong>
+                        <span id="prediction" class="prediction-highlight"></span>
+                      </p>
+                    </div>
+                    <h5><i class="fas fa-list-ol me-2"></i>Top 3 possible conditions:</h5>
+                    <div class="card top-diseases-card mb-3">
+                      <div class="card-body p-0">
+                        <ul id="top-diseases" class="list-group list-group-flush">
+                          <!-- Will be filled dynamically -->
+                        </ul>
+                      </div>
+                    </div>
+                    <div class="mt-3">
+                      <p class="disclaimer">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        <strong>Note:</strong> This is not a medical diagnosis.
+                        Please consult with a healthcare professional for proper
+                        medical advice.
+                      </p>
+                    </div>
+                    <button id="reset-btn" class="btn btn-secondary mt-3">
+                      <i class="fas fa-redo me-2"></i>Start Over
+                    </button>
+                  </div>
+                </div>
+                
+                <!-- Chatbot Tab -->
+                <div class="tab-pane fade" id="chatbot" role="tabpanel" aria-labelledby="chatbot-tab">
+                  <div class="row">
+                    <div class="col-12">
+                      <div class="chat-container" id="chat-container">
+                        <div class="bot-message chat-message">
+                          <i class="fas fa-robot me-2"></i>Hello! I'm your health assistant. Please describe your symptoms, and I'll help identify possible conditions.
+                        </div>
+                      </div>
+                      
+                      <div class="chat-input-container">
+                        <input type="text" class="form-control chat-input" id="chat-input" placeholder="Describe your symptoms..." />
+                        <button class="btn btn-primary send-button" id="send-button">
+                          <i class="fas fa-paper-plane"></i>
+                        </button>
+                      </div>
+                      
+                      <div id="chat-result" class="chat-result" style="display: none;">
+                        <h5><i class="fas fa-clipboard-check me-2"></i>Diagnosis Based on Chat:</h5>
+                        <div class="mb-3">
+                          <strong><i class="fas fa-check-circle me-2"></i>Identified Symptoms:</strong>
+                          <div id="chat-symptoms" class="mt-2"></div>
+                        </div>
+                        <div class="alert alert-info">
+                          <p>
+                            <strong>Primary prediction:</strong>
+                            <span id="chat-prediction" class="prediction-highlight"></span>
+                          </p>
+                        </div>
+                        <h6><i class="fas fa-list-ol me-2"></i>Top 3 possible conditions:</h6>
+                        <div class="card top-diseases-card mb-3">
+                          <div class="card-body p-0">
+                            <ul id="chat-top-diseases" class="list-group list-group-flush mb-0">
+                              <!-- Will be filled dynamically -->
+                            </ul>
+                          </div>
+                        </div>
+                        <div class="mt-2">
+                          <p class="disclaimer">
+                            <i class="fas fa-exclamation-triangle me-2"></i>
+                            <strong>Note:</strong> This is not a medical diagnosis.
+                            Please consult with a healthcare professional for proper
+                            medical advice.
+                          </p>
+                        </div>
+                        <button id="chat-reset-btn" class="btn btn-secondary mt-2">
+                          <i class="fas fa-redo me-2"></i>Start New Consultation
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <script>
+      $(document).ready(function () {
+        // Update selected symptoms display
+        function updateSelectedSymptoms() {
+          const selectedSymptoms = [];
+          $("input[name='symptoms']:checked").each(function () {
+            selectedSymptoms.push($(this).val());
+          });
+
+          // Update count
+          $("#symptom-count").text(selectedSymptoms.length);
+
+          // Update list
+          const listHtml = selectedSymptoms
+            .map(
+              (symptom) =>
+                `<span class="symptom-badge">${symptom
+                  .replace("_", " ")
+                  .title()} <a href="#" class="remove-symptom" data-symptom="${symptom}"><i class="fas fa-times-circle"></i></a></span>`
+            )
+            .join("");
+
+          $("#selected-symptoms-list").html(
+            listHtml || "<p class='text-muted'>No symptoms selected</p>"
+          );
+        }
+
+        // Filter symptoms based on search
+        $("#search-box").on("keyup", function () {
+          var value = $(this).val().toLowerCase();
+          
+          // If search is empty, show all categories
+          if (value === "") {
+            $(".symptom-category").show();
+            $(".symptom-item").show();
+            return;
+          }
+          
+          // Hide all categories initially
+          $(".symptom-category").hide();
+          
+          // Show categories and items that match the search
+          $(".symptom-item").each(function () {
+            var text = $(this).text().toLowerCase();
+            var matches = text.indexOf(value) > -1;
+            $(this).toggle(matches);
+            
+            // If this item matches, show its parent category
+            if (matches) {
+              $(this).closest(".symptom-category").show();
+              // Ensure the category content is expanded
+              $(this).closest(".category-content").addClass("show");
+            }
+          });
+        });
+
+        // Update selected symptoms when checkbox changes
+        $(document).on("change", "input[name='symptoms']", function () {
+          updateSelectedSymptoms();
+        });
+        
+        // Quick select buttons
+        $(".quick-symptom").click(function() {
+          var symptomName = $(this).data("symptom");
+          // Find the checkbox with this value
+          var checkbox = $("input[name='symptoms'][value*='" + symptomName + "']");
+          
+          if (checkbox.length) {
+            // Toggle the checkbox
+            checkbox.prop("checked", !checkbox.prop("checked"));
+            updateSelectedSymptoms();
+            
+            // Scroll to the category containing this symptom
+            var category = checkbox.closest(".symptom-category");
+            if (category.length) {
+              $('html, body').animate({
+                scrollTop: category.offset().top - 100
+              }, 500);
+              
+              // Highlight the category briefly
+              category.css("background-color", "#e7f1ff");
+              setTimeout(function() {
+                category.css("background-color", "#f8f9fa");
+              }, 1000);
+            }
+          }
+        });
+        
+        // Remove symptom when clicking the X
+        $(document).on("click", ".remove-symptom", function(e) {
+          e.preventDefault();
+          var symptomName = $(this).data("symptom");
+          // Uncheck the corresponding checkbox
+          $("input[name='symptoms'][value='" + symptomName + "']").prop("checked", false);
+          updateSelectedSymptoms();
+        });
+
+        // Handle form submission
+        $("#prediction-form").submit(function (e) {
+          e.preventDefault();
+          
+          // Check if any symptoms are selected
+          if ($("input[name='symptoms']:checked").length === 0) {
+            alert("Please select at least one symptom before predicting.");
+            return;
+          }
+
+          // Show loading spinner
+          $(".loading").show();
+          $("#result").hide();
+
+          // Get form data
+          var formData = $(this).serialize();
+
+          // Send AJAX request
+          $.ajax({
+            type: "POST",
+            url: "/predict",
+            data: formData,
+            success: function (response) {
+              // Hide loading spinner
+              $(".loading").hide();
+
+              // Display results
+              $("#prediction").text(response.prediction);
+
+              // Display top diseases
+              var topDiseasesHtml = "";
+              response.top_diseases.forEach(function (item) {
+                var disease = item[0];
+                var probability = (item[1] * 100).toFixed(2);
+                topDiseasesHtml += `<li class="list-group-item d-flex justify-content-between align-items-center">
+                                ${disease}
+                                <span class="badge bg-primary rounded-pill">${probability}%</span>
+                            </li>`;
+              });
+
+              $("#top-diseases").html(topDiseasesHtml);
+              $("#result").show();
+              
+              // Scroll to results
+              $('html, body').animate({
+                scrollTop: $("#result").offset().top - 100
+              }, 500);
+            },
+            error: function (error) {
+              $(".loading").hide();
+              alert("Error: " + error.responseText);
+            },
+          });
+        });
+
+        // Reset button
+        $("#reset-btn").click(function () {
+          // Clear all checkboxes
+          $("input[name='symptoms']").prop("checked", false);
+
+          // Update selected symptoms
+          updateSelectedSymptoms();
+
+          // Hide result
+          $("#result").hide();
+
+          // Clear search box
+          $("#search-box").val("");
+          $(".symptom-item").show();
+          $(".symptom-category").show();
+
+          // Scroll to top
+          window.scrollTo(0, 0);
+        });
+        
+        // Chatbot functionality
+        function scrollChatToBottom() {
+          const chatContainer = document.getElementById('chat-container');
+          chatContainer.scrollTop = chatContainer.scrollHeight;
+        }
+        
+        function addMessage(message, isUser) {
+          const messageClass = isUser ? 'user-message' : 'bot-message';
+          const icon = isUser ? '<i class="fas fa-user me-2"></i>' : '<i class="fas fa-robot me-2"></i>';
+          const messageHtml = `<div class="${messageClass} chat-message">${icon}${message}</div>`;
+          $("#chat-container").append(messageHtml);
+          scrollChatToBottom();
+        }
+        
+        function sendMessage() {
+          const message = $("#chat-input").val().trim();
+          if (message === '') return;
+          
+          // Add user message to chat
+          addMessage(message, true);
+          
+          // Clear input
+          $("#chat-input").val('');
+          
+          // Show typing indicator
+          addMessage('<div class="typing-indicator"><span></span><span></span><span></span></div>', false);
+          
+          // Send message to server
+          $.ajax({
+            type: "POST",
+            url: "/chat",
+            contentType: "application/json",
+            data: JSON.stringify({ message: message }),
+            success: function(response) {
+              // Remove typing indicator
+              $(".typing-indicator").closest('.chat-message').remove();
+              
+              // Add bot response
+              addMessage(response.response, false);
+              
+              // If there's a prediction, show the results
+              if (response.prediction) {
+                $("#chat-prediction").text(response.prediction);
+                
+                // Display symptoms
+                const symptomsHtml = response.confirmed_symptoms.map(symptom => 
+                  `<span class="symptom-badge">${symptom}</span>`
+                ).join('');
+                $("#chat-symptoms").html(symptomsHtml);
+                
+                // Display top diseases
+                var topDiseasesHtml = "";
+                response.top_diseases.forEach(function (item) {
+                  var disease = item[0];
+                  var probability = (item[1] * 100).toFixed(2);
+                  topDiseasesHtml += `<li class="list-group-item d-flex justify-content-between align-items-center">
+                                  ${disease}
+                                  <span class="badge bg-primary rounded-pill">${probability}%</span>
+                              </li>`;
+                });
+                
+                $("#chat-top-diseases").html(topDiseasesHtml);
+                $("#chat-result").show();
+                
+                // Scroll to results
+                $('html, body').animate({
+                  scrollTop: $("#chat-result").offset().top - 100
+                }, 500);
+              }
+            },
+            error: function(error) {
+              // Remove typing indicator
+              $(".typing-indicator").closest('.chat-message').remove();
+              
+              // Add error message
+              addMessage("Sorry, there was an error processing your message. Please try again.", false);
+            }
+          });
+        }
+        
+        // Send button click
+        $("#send-button").click(function() {
+          sendMessage();
+        });
+        
+        // Enter key press in chat input
+        $("#chat-input").keypress(function(e) {
+          if (e.which === 13) {
+            sendMessage();
+            return false;
+          }
+        });
+        
+        // Chat reset button
+        $("#chat-reset-btn").click(function() {
+          // Clear chat container except for the first greeting message
+          $("#chat-container").html('<div class="bot-message chat-message"><i class="fas fa-robot me-2"></i>Hello! I\'m your health assistant. Please describe your symptoms, and I\'ll help identify possible conditions.</div>');
+          
+          // Hide results
+          $("#chat-result").hide();
+          
+          // Reset chat on server
+          $.ajax({
+            type: "POST",
+            url: "/reset_chat",
+            success: function() {
+              // Focus on input
+              $("#chat-input").focus();
+            }
+          });
+        });
+        
+        // Tab change event - reset chat when switching to chatbot tab
+        $("#chatbot-tab").on('shown.bs.tab', function (e) {
+          scrollChatToBottom();
+        });
+      });
+    </script>
+  </body>
+</html>

@@ -1,0 +1,27 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+*.egg
+
+# Virtual environment
+venv/
+env/
+.venv/
+.env/
+
+# Django specific
+db.sqlite3
+*.log
+local_settings.py # If you have one for local sensitive settings
+media/ # If you store user-uploaded media here and don't want it in the repo
+# static_root/ # If you run collectstatic and don't want the collected files in repo
+
+# IDE / Editor specific
+.vscode/
+.idea/
+*.swp
+
+# OS specific
+.DS_Store
+Thumbs.db
